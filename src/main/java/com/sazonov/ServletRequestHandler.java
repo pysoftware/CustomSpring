@@ -1,6 +1,10 @@
 package com.sazonov;
 
+import com.sazonov.filters.AuthFilter;
 import com.sazonov.ioc.AppContextInitializer;
+import com.sazonov.repositories.CitiesRepositoryImpl;
+import com.sazonov.responses.CitiesResponse;
+import com.sazonov.utils.JsonUtils;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 
@@ -21,11 +25,18 @@ public class ServletRequestHandler extends CustomHttpServlet {
     @Override
     protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
 //        DriverManager.getConnection("localhost:3309", "root", "root");
+//        log.info(String.valueOf(req.getSession()));
         log.info("test {} {}", req.getPathInfo(), resp);
         AppContextInitializer.getInstance().handleHttpRequest(req, resp);
-        resp.setContentType("text/html");
+        AuthFilter authFilter = new AuthFilter();
+        authFilter.filter(req, resp);
+        resp.setContentType("application/json");
+        CitiesRepositoryImpl citiesRepository = new CitiesRepositoryImpl();
+        String json = JsonUtils.objectToJson(CitiesResponse.builder().cities(citiesRepository.getAllCities()).build());
+        log.info("HM :::" + resp.getStatus());
+        log.info("json :::" + json);
         PrintWriter printWriter = resp.getWriter();
-        printWriter.write("Hello1!");
+        printWriter.write(json);
         printWriter.close();
     }
 

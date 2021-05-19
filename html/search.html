@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Search</title>
+    <script src="https://unpkg.com/axios/dist/axios.min.js"></script>
+</head>
+<body>
+<form id="search">
+    <label for="firstName">First name: </label><input type="text" name="firstName" id="firstName"> <br>
+    <label for="lastName">Last name: </label><input type="text" name="lastName" id="lastName"> <br>
+    <label for="patronymic">Patronymic: </label><input type="text" name="patronymic" id="patronymic"> <br>
+    <label for="cities">Cities: </label><select name="cities" id="cities"></select> <br>
+
+    <input type="submit">
+</form>
+
+<script>
+    // TODO hello -> cities
+    axios.get("http://localhost:8081/hello", {withCredentials: true}).then(response => {
+        const citiesSelect = document.getElementById("cities");
+        if (response.data.cities) {
+            response.data.cities.forEach(item => {
+                citiesSelect.add(new Option(item.name, item.id))
+            })
+        }
+    });
+
+    document.getElementById("search").addEventListener("submit", e => {
+        e.preventDefault();
+    });
+</script>
+</body>
+</html>

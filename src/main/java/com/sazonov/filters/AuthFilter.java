@@ -5,6 +5,7 @@ import com.sazonov.ioc.web.filters.Filter;
 import com.sazonov.ioc.web.filters.Filterable;
 import lombok.AllArgsConstructor;
 import lombok.SneakyThrows;
+import lombok.extern.slf4j.Slf4j;
 
 import javax.servlet.http.Cookie;
 import javax.servlet.http.HttpServletRequest;
@@ -13,25 +14,33 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.util.Arrays;
+import java.util.Objects;
 import java.util.Optional;
+
+import static javax.servlet.http.HttpServletResponse.SC_UNAUTHORIZED;
 
 @Filter(
         requestUriPath = "/*",
         order = 1
 )
+@Slf4j
 public class AuthFilter implements Filterable {
     @SneakyThrows
     @Override
     public boolean filter(HttpServletRequest req, HttpServletResponse resp) {
-        Optional<String> sessionId = findCookieByName(req.getCookies(), "session_id");
+        Optional<String> sessionId = findCookieByName(req.getCookies(), "JSESSIONID");
         if (!sessionId.isPresent()) {
+            resp.setStatus(SC_UNAUTHORIZED);
             return false;
         }
-        Connection dbConnection = PostgreDbConfig.instance.getConnection();
-        PreparedStatement preparedStatement = dbConnection.prepareStatement("SELECT * FROM sessions where session_id = ?");
+        log.info("SESSION ID:::" +  sessionId.get());
+        Connection dbConnection = PostgreDbConfig.getInstance().getConnection();
+        PreparedStatement preparedStatement = dbConnection
+                .prepareStatement("SELECT * FROM sessions where session_id = ?");
         preparedStatement.setString(1, sessionId.get());
         ResultSet resultSet = preparedStatement.executeQuery();
         if (!resultSet.next()) {
+            resp.setStatus(SC_UNAUTHORIZED);
             return false;
         }
         dbConnection.close();
@@ -39,6 +48,9 @@ public class AuthFilter implements Filterable {
     }
 
     private Optional<String> findCookieByName(Cookie[] cookies, String key) {
+        if (Objects.isNull(cookies)) {
+            return Optional.empty();
+        }
         return Arrays.stream(cookies)
                 .filter(c -> key.equals(c.getName()))
                 .map(Cookie::getValue)
