@@ -44,5 +44,4 @@ public final class PostgreDbConfig {
 
         return DriverManager.getConnection(url, props);
     }
-
 }
