@@ -7,7 +7,7 @@ import java.sql.SQLException;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
-public class DBTest {
+public class PostgreDbConfigTest {
 
     private Connection getNewConnection() throws SQLException, ClassNotFoundException {
         Class.forName("org.postgresql.Driver");
