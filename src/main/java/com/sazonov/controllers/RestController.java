@@ -21,8 +21,4 @@ public class RestController {
     public String handlePostMethod() {
         return "";
     }
-
-    public static void main(String[] args) {
-        Arrays.stream(RestController.class.getAnnotations()).forEach(item -> log.info(String.valueOf(item)));
-    }
 }
