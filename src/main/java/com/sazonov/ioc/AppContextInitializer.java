@@ -1,5 +1,6 @@
 package com.sazonov.ioc;
 
+import com.sazonov.CustomHttpServlet;
 import lombok.Getter;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
@@ -8,37 +9,35 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.File;
 import java.lang.annotation.Annotation;
+import java.lang.reflect.Constructor;
 import java.lang.reflect.Method;
 import java.net.URL;
 import java.util.*;
 
 @Slf4j
 public class AppContextInitializer {
-    private static AppContextInitializer instance;
+    public static AppContextInitializer INSTANCE = new AppContextInitializer();
 
     @Getter
-    private List<Class<?>> allProjectClasses = new ArrayList<>();
+    private Set<Class<?>> allProjectClasses = new HashSet<>();
+    private Set<Class<?>> components = new HashSet<>();
 
     private AppContextInitializer() {
     }
 
-    public static AppContextInitializer getInstance() {
-        if (Objects.isNull(instance)) {
-            instance = new AppContextInitializer();
-        }
-        return instance;
-    }
-
     @SneakyThrows
     public void init(String packageName) {
-        AppContextInitializer appContextInitializer = getInstance();
-        Class<? extends AppContextInitializer> appContextInitializerClass = getInstance().getClass();
-        URL url = appContextInitializerClass.getClassLoader().getResource("com/sazonov");
+        AppContextInitializer appContextInitializer = INSTANCE;
+        Class<? extends AppContextInitializer> appContextInitializerClass = INSTANCE.getClass();
+        URL url = appContextInitializerClass.getClassLoader().getResource(getFilePathOfPackageName(packageName));
         assert Objects.nonNull(url);
 
         this.allProjectClasses = appContextInitializer.findClasses(new File(url.getFile()), packageName);
+        this.components = findComponents();
+        instantiateContextClassesInstances();
 
-        log.info(String.valueOf(allProjectClasses));
+//        log.info(String.valueOf(allProjectClasses));
+        log.info("Components {}", components);
     }
 
     public void handleHttpRequest(HttpServletRequest req, HttpServletResponse resp) throws Exception {
@@ -70,7 +69,7 @@ public class AppContextInitializer {
         for (Method method : suitableControllerMethods) {
             Annotation[] annotations = method.getAnnotations();
             if (annotations.length > 0) {
-                for (Annotation annotation: annotations) {
+                for (Annotation annotation : annotations) {
 //                    annotation.getClass().getAnnotation();
                 }
             }
@@ -82,12 +81,25 @@ public class AppContextInitializer {
      *
      * @return
      */
-    private List<Class<?>> findBeans() {
-        return null;
+    private Set<Class<?>> findComponents() {
+        Set<Class<?>> components = new HashSet<>();
+        this.allProjectClasses.forEach(clazz -> {
+            if(Objects.nonNull(clazz.getAnnotation(Component.class))) {
+                components.add(clazz);
+            }
+        });
+        return components;
     }
 
-    private List<Class<?>> findClasses(File dir, String packageName) {
-        List<Class<?>> classes = new ArrayList<>();
+    private boolean isClassAComponent(Class<?> clazz) {
+        if (Objects.nonNull(clazz)) {
+            clazz.getAnnotation(Component.class);
+        }
+        return false;
+    }
+
+    private Set<Class<?>> findClasses(File dir, String packageName) {
+        Set<Class<?>> classes = new HashSet<>();
         Arrays.stream(Objects.requireNonNull(dir.listFiles())).forEach(item -> {
             try {
                 if (item.isDirectory()) {
@@ -103,7 +115,41 @@ public class AppContextInitializer {
         return classes;
     }
 
+    private void instantiateContextClassesInstances() throws Exception {
+        Set<Object> instances = new HashSet<>();
+        this.components.forEach(clazz -> {
+            try {
+                getConstructorParameters(clazz);
+                if (!clazz.isAnnotation()) {
+                    instances.add(clazz.newInstance());
+                }
+            } catch (InstantiationException | IllegalAccessException e) {
+                e.printStackTrace();
+            }
+        });
+    }
+
+    private void getConstructorParameters(Class<?> clazz) {
+        Constructor<?>[] constructors = clazz.getConstructors();
+        for (Constructor<?> constructor : constructors) {
+            Class<?>[] paramTypes = constructor.getParameterTypes();
+            for (Class<?> paramType : paramTypes) {
+//                log.info("{} {}", paramType.getC);
+                System.out.print(paramType.getName() + " ");
+            }
+            System.out.println();
+        }
+    }
+
+    private boolean isClassInstanceExists(Class<?> clazz) {
+        return true;
+    }
+
     private String getClassName(String fullClassName) {
         return fullClassName.replace(".class", "");
+    }
+
+    private String getFilePathOfPackageName(String packageName) {
+        return packageName.replace(".", "/");
     }
 }

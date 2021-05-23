@@ -1,7 +1,6 @@
 package com.sazonov.ioc.web.filters;
 
-import com.sazonov.ioc.RequestMethod;
-import com.sazonov.ioc.web.requestMapping.RequestMapping;
+import com.sazonov.ioc.Component;
 
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
@@ -10,7 +9,7 @@ import java.lang.annotation.Target;
 
 @Retention(RetentionPolicy.RUNTIME)
 @Target(ElementType.TYPE)
-@RequestMapping(method = {RequestMethod.GET})
+@Component
 public @interface Filter {
     /**
      * Handle request path

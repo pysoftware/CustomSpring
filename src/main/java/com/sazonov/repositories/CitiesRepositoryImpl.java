@@ -2,6 +2,7 @@ package com.sazonov.repositories;
 
 import com.sazonov.config.PostgreDbConfig;
 import com.sazonov.enteties.City;
+import com.sazonov.ioc.Component;
 import lombok.SneakyThrows;
 
 import java.sql.Connection;
@@ -9,6 +10,7 @@ import java.sql.ResultSet;
 import java.util.LinkedList;
 import java.util.List;
 
+@Component
 public class CitiesRepositoryImpl implements CitiesRepository {
     @SneakyThrows
     @Override

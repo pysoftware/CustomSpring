@@ -10,6 +10,7 @@ import lombok.extern.slf4j.Slf4j;
 import javax.servlet.http.Cookie;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
+import java.io.IOException;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
@@ -30,17 +31,17 @@ public class AuthFilter implements Filterable {
     public boolean filter(HttpServletRequest req, HttpServletResponse resp) {
         Optional<String> sessionId = findCookieByName(req.getCookies(), "JSESSIONID");
         if (!sessionId.isPresent()) {
-            resp.setStatus(SC_UNAUTHORIZED);
+            setNonAuthorizedResponseParameters(resp);
             return false;
         }
-        log.info("SESSION ID:::" +  sessionId.get());
+        log.info("SESSION ID:::" + sessionId.get());
         Connection dbConnection = PostgreDbConfig.getInstance().getConnection();
         PreparedStatement preparedStatement = dbConnection
                 .prepareStatement("SELECT * FROM sessions where session_id = ?");
         preparedStatement.setString(1, sessionId.get());
         ResultSet resultSet = preparedStatement.executeQuery();
         if (!resultSet.next()) {
-            resp.setStatus(SC_UNAUTHORIZED);
+            setNonAuthorizedResponseParameters(resp);
             return false;
         }
         dbConnection.close();
@@ -55,5 +56,10 @@ public class AuthFilter implements Filterable {
                 .filter(c -> key.equals(c.getName()))
                 .map(Cookie::getValue)
                 .findAny();
+    }
+
+    private void setNonAuthorizedResponseParameters(HttpServletResponse httpServletResponse) throws IOException {
+        httpServletResponse.setStatus(SC_UNAUTHORIZED);
+        httpServletResponse.sendRedirect("/login");
     }
 }
